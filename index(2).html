@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pizarra de LaLiga</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: matchday sheet — league switch, quick leaders strip, match analyzer as the centerpiece, then table and players */
+:root{
+  --bg:#eef1ec; --paper:#ffffff; --ink:#15201a; --muted:#5b6760; --line:#d9dfd8; --soft:#f4f7f3;
+  --acc:#d23a2a; --acc-soft:#fbe6e2;
+  --good:#1f8a4c; --warn:#c98a00; --bad:#c23b3b; --yel:#e8b400; --red:#d23030;
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1512; --paper:#18201b; --ink:#e9efe9; --muted:#97a39b; --line:#2a342e; --soft:#1d2620;
+  --acc:#f0644f; --acc-soft:#3a1d18; --good:#46c07a; --warn:#e5b13b; --bad:#ec6a6a; --yel:#f2c632; --red:#f05050; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1512; --paper:#18201b; --ink:#e9efe9; --muted:#97a39b; --line:#2a342e; --soft:#1d2620;
+  --acc:#f0644f; --acc-soft:#3a1d18; --good:#46c07a; --warn:#e5b13b; --bad:#ec6a6a; --yel:#f2c632; --red:#f05050; color-scheme:dark}
+body[data-l="hyper"]{--acc:#1d63c9; --acc-soft:#e1eafa}
+body[data-l="ucl"]{--acc:#2b3a8f; --acc-soft:#e3e6f6}
+body[data-l="uel"]{--acc:#d9700f; --acc-soft:#fbead8}
+body[data-l="copa"]{--acc:#8a1f3c; --acc-soft:#f5e1e7}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body[data-l="hyper"]{--acc:#6ea0f0;--acc-soft:#18243a}
+:root:not([data-theme="light"]) body[data-l="ucl"]{--acc:#8a9cf0;--acc-soft:#1c2140}
+:root:not([data-theme="light"]) body[data-l="uel"]{--acc:#f29a46;--acc-soft:#3a2614}
+:root:not([data-theme="light"]) body[data-l="copa"]{--acc:#e0708f;--acc-soft:#3a1822}}
+:root[data-theme="dark"] body[data-l="hyper"]{--acc:#6ea0f0;--acc-soft:#18243a}
+:root[data-theme="dark"] body[data-l="ucl"]{--acc:#8a9cf0;--acc-soft:#1c2140}
+:root[data-theme="dark"] body[data-l="uel"]{--acc:#f29a46;--acc-soft:#3a2614}
+:root[data-theme="dark"] body[data-l="copa"]{--acc:#e0708f;--acc-soft:#3a1822}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{text-wrap:balance}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+header h1{font:800 clamp(2.4rem,8vw,3.6rem)/.92 var(--display);text-transform:uppercase;margin:0;letter-spacing:.01em}
+header p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.switch{display:flex;flex-wrap:wrap;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper)}
+.switch button{flex:1 1 auto}
+tr.esp td{background:var(--acc-soft)}
+[hidden]{display:none!important}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.match{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;min-width:0}
+.match .who{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.match .sc{font:800 1.3rem var(--display);font-variant-numeric:tabular-nums}
+.match .st{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px}
+.p-ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.p-ko{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.p-wait{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.res h3{grid-column:1/-1;margin:8px 0 0;font:700 1.2rem var(--display);text-transform:uppercase}
+.switch button{font:700 15px var(--body);padding:10px 16px;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.switch button[aria-pressed="true"]{background:var(--acc);color:#fff}
+button:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sec-h h2{font:800 1.7rem/1 var(--display);text-transform:uppercase;margin:0}
+.meta{font-size:13px;color:var(--muted)}
+
+.leaders{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.leaders{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:340px){.leaders{grid-template-columns:1fr}}
+.lead{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.lead .k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lead .v{font:800 2.1rem/1 var(--display);font-variant-numeric:tabular-nums}
+.lead .t{font-weight:600}
+.lead .s{font-size:12px;color:var(--muted)}
+.lead.na .v{color:var(--muted);font-size:1.3rem}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.analyzer{border-top:6px solid var(--acc)}
+.pick{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+.pick label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:0}
+.pick select{font:600 16px var(--body);padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);width:100%}
+.pick .vs{font:800 1.4rem var(--display);color:var(--muted);padding-bottom:10px}
+@media (max-width:480px){.pick{grid-template-columns:1fr}.pick .vs{display:none}}
+
+.odds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.odd{background:var(--soft);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.odd .lab{font-size:12px;color:var(--muted);font-weight:600;line-height:1.25;min-height:2.5em;overflow-wrap:anywhere}
+.odd .pct{font:800 2rem/1 var(--display);font-variant-numeric:tabular-nums}
+.odd.best{background:var(--acc-soft);outline:2px solid var(--acc)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.fact{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fact .lab{font-size:12px;color:var(--muted)}
+.fact .val{font:700 1.5rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.fact .sub{font-size:12px;color:var(--muted)}
+.fact.na .val{font-size:1rem;color:var(--muted);font-family:var(--body);font-weight:500}
+.cmp{display:flex;flex-direction:column;gap:8px}
+.cmp-row{display:grid;grid-template-columns:52px 1fr 130px 1fr 52px;gap:8px;align-items:center;font-variant-numeric:tabular-nums}
+.cmp-row .n{font-weight:700;text-align:center}
+.cmp-row .lab{font-size:12px;color:var(--muted);text-align:center}
+.cmp-row .l,.cmp-row .r{height:8px;border-radius:4px;background:var(--line);overflow:hidden;display:flex}
+.cmp-row .l{justify-content:flex-end}
+.cmp-row .l i{background:var(--acc)} .cmp-row .r i{background:var(--muted)}
+@media (max-width:480px){.cmp-row{grid-template-columns:40px 1fr 92px 1fr 40px}}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--soft);position:sticky;top:0;cursor:pointer;user-select:none}
+th[aria-sort]::after{content:" ↓";color:var(--acc)}
+td.tm,th.tm{text-align:left}
+td.tm{font-weight:600}
+td.pos{color:var(--muted);text-align:center;width:28px}
+tr:last-child td{border-bottom:0}
+.zone{display:inline-block;width:4px;height:16px;border-radius:2px;vertical-align:middle;margin-right:8px;background:transparent}
+.z-top{background:var(--good)} .z-mid{background:var(--warn)} .z-bot{background:var(--bad)}
+.cardy{display:inline-block;width:9px;height:12px;border-radius:2px;background:var(--yel);vertical-align:-1px;margin-right:4px}
+.cardr{display:inline-block;width:9px;height:12px;border-radius:2px;background:var(--red);vertical-align:-1px;margin-right:4px}
+.dash{color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.note{font-size:13px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.note strong{color:var(--ink)}
+footer{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pizarra de LaLiga</h1>
+      <p id="sub">Goles, victorias, tarjetas, córners y tiros a puerta de la temporada 2026/27: LaLiga, Hypermotion, Champions, Europa League y Copa del Rey.</p>
+    </div>
+    <div class="switch" id="switch">
+      <button data-l="liga" aria-pressed="true">LaLiga EA Sports</button>
+      <button data-l="hyper" aria-pressed="false">Hypermotion</button>
+      <button data-l="ucl" aria-pressed="false">Champions</button>
+      <button data-l="uel" aria-pressed="false">Europa League</button>
+      <button data-l="copa" aria-pressed="false">Copa del Rey</button>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <div class="sec-h"><h2 id="ldTitle">Líderes</h2><span class="meta" id="jor"></span></div>
+    <div class="leaders" id="leaders"></div>
+  </section>
+
+  <section class="card analyzer" id="secAn">
+    <div class="sec-h"><h2>Analizar un partido</h2><span class="meta">Estimación con las medias de la temporada</span></div>
+    <div class="pick">
+      <label for="home">Local<select id="home"></select></label>
+      <span class="vs">VS</span>
+      <label for="away">Visitante<select id="away"></select></label>
+    </div>
+    <div class="odds" id="odds"></div>
+    <div class="facts" id="facts"></div>
+    <div class="cmp" id="cmp"></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:10px" id="secTb">
+    <div class="sec-h"><h2 id="tbTitle">Clasificación y estadísticas</h2><span class="meta" id="tbMeta">Toca una columna para ordenar</span></div>
+    <div class="tbl"><table id="table"></table></div>
+    <div class="legend" id="zlegend"></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:10px" id="secPl">
+    <div class="sec-h"><h2 id="plTitle">Jugadores</h2><span class="meta" id="plMeta"></span></div>
+    <div class="tbl"><table id="players"></table></div>
+  </section>
+
+  <div class="note" id="anNote"><strong>Cómo leer el analizador:</strong> los porcentajes salen de un modelo de Poisson con los goles a favor y en contra de cada equipo esta temporada. No tiene en cuenta lesiones, rotaciones ni el factor campo, así que tómalo como una orientación, no como una apuesta segura.</div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+// ---------- DATOS (snapshot 6 nov 2026) ----------
+// LaLiga: clasificación oficial laliga.com (jornada 12). Córners y amarillas por partido: Betaminic. Tarjetas totales y jugadores: FutbolTotal.
+// t: [nombre, PJ, G, E, P, GF, GC, Pts, córnersFavor/p, córnersContra/p, amarillasPropias/p, amarillasRival/p, amarillasTot, rojasTot, tirosP, tirosPuertaP, posesión]
+const L={
+ liga:{name:"LaLiga EA Sports",jor:"Jornada 12 · datos al 6 de noviembre de 2026",zones:[[1,4,"z-top","Champions"],[5,6,"z-mid","Europa / Conference"],[18,20,"z-bot","Descenso"]],
+  t:[
+   ["FC Barcelona",11,10,0,1,46,12,30,6.82,2.82,1.55,1.91,17,0],
+   ["Atlético de Madrid",11,9,1,1,22,8,28,5.73,3.09,2.18,1.45,24,1],
+   ["Real Madrid",11,9,0,2,28,10,27,6.36,4.00,1.91,2.64,22,2],
+   ["Real Betis",11,7,2,2,18,15,23,5.18,5.82,1.55,2.36,18,1],
+   ["Real Sociedad",11,6,1,4,20,20,19,6.64,4.64,2.00,2.45,24,3],
+   ["Sevilla FC",11,5,2,4,17,19,17,3.18,3.36,2.82,1.91,32,4],
+   ["Athletic Club",10,4,3,3,14,10,15,5.90,4.60,1.80,2.00,20,2],
+   ["RC Deportivo",11,3,5,3,15,14,14,5.36,4.73,1.64,2.27,21,3],
+   ["Villarreal CF",11,3,3,5,15,15,12,7.27,4.45,2.00,2.91,22,1],
+   ["Celta",11,2,6,3,10,10,12,2.82,4.55,1.64,2.00,18,1],
+   ["Deportivo Alavés",11,3,3,5,15,17,12,4.00,4.64,1.82,2.09,20,1],
+   ["Rayo Vallecano",10,3,3,4,15,20,12,5.20,5.70,2.50,2.20,25,2],
+   ["Getafe CF",11,3,3,5,8,16,12,4.00,5.27,3.36,2.55,39,5],
+   ["RCD Espanyol",11,3,2,6,13,14,11,2.45,5.82,3.09,2.73,34,1],
+   ["CA Osasuna",11,3,2,6,11,22,11,3.45,5.36,2.73,1.64,26,0],
+   ["Racing de Santander",11,3,2,6,15,29,11,5.00,7.64,2.64,2.36,29,1],
+   ["Elche CF",11,2,4,5,14,18,10,4.55,4.27,2.55,1.91,28,1],
+   ["Levante UD",11,2,4,5,16,21,10,3.55,4.91,1.27,1.91,17,0],
+   ["Valencia CF",11,2,3,6,8,17,9,3.82,5.00,2.36,2.18,27,1],
+   ["Málaga CF",11,0,5,6,8,21,5,5.00,5.55,2.27,2.18,26,0]],
+  // [jugador, equipo, goles, tiros, tiros a puerta, asistencias, amarillas, rojas]
+  p:[["Raphinha","FC Barcelona",15,28,19,3,0,0],["Kylian Mbappé","Real Madrid",12,47,30,2,2,0],["Lamine Yamal","FC Barcelona",10,47,19,7,2,0],
+     ["Ante Budimir","CA Osasuna",8,28,17,0,1,0],["Yassir Zabiri","Racing de Santander",8,22,13,0,4,0],["Sergio Camello","Rayo Vallecano",7,22,14,2,3,0],
+     ["Roberto Fernández","RCD Espanyol",6,19,9,0,0,0],["Fer Niño","Elche CF",6,19,10,0,2,0],["Fermín López","FC Barcelona",5,14,10,5,3,0],
+     ["Álex Baena","Atlético de Madrid",5,17,10,3,3,0],["P.-E. Aubameyang","RC Deportivo",5,15,11,2,0,0],["Roger Brugué","Levante UD",5,21,10,1,0,0],
+     ["Adrián Niño","Málaga CF",5,14,9,0,0,0],["Lucas Boyé","Deportivo Alavés",5,20,10,0,1,0],["Álex Berenguer","Athletic Club",4,16,6,4,1,0],
+     ["Mariano Díaz","Deportivo Alavés",4,11,10,4,2,0],["Jude Bellingham","Real Madrid",4,17,10,3,2,0],["Álex Grimaldo","Atlético de Madrid",4,12,9,2,0,0],
+     ["Luka Sučić","Real Sociedad",4,15,8,0,2,0]],
+  pcards:"Más amarillas de un jugador: Isaac Romero (Sevilla), 6.",
+  src:[["Clasificación oficial · laliga.com","https://www.laliga.com/laliga-easports/clasificacion"],["Córners y amarillas por partido · Betaminic","https://www.betaminic.com/es/estadisticas/estadisticas-corners-la-liga/"],["Tarjetas y jugadores · FutbolTotal","https://futboltotal.futbol/league/la-liga/estadisticas"]]},
+ hyper:{name:"LaLiga Hypermotion",jor:"12 partidos jugados · datos al 6 de noviembre de 2026",zones:[[1,2,"z-top","Ascenso directo"],[3,6,"z-mid","Playoff"],[19,22,"z-bot","Descenso"]],
+  t:[
+   ["CD Castellón",12,8,3,1,23,5,27,null,null,null,null,null,2,12.9,4.7,60.4],
+   ["UD Almería",12,8,2,2,23,10,26,null,null,null,null,null,null,12.2,4.2,52.6],
+   ["SD Eibar",12,7,2,3,21,14,23,null,null,null,null,null,2,12.7,4.8,44.3],
+   ["Granada CF",12,7,2,3,20,14,23,null,null,null,null,null,null,14.0,4.1,48.7],
+   ["RCD Mallorca",12,6,4,2,15,7,22,null,null,null,null,36,null,12.9,4.1,52.9],
+   ["Real Sporting",12,7,1,4,13,13,22,null,null,null,null,null,null,11.2,4.0,50.3],
+   ["Girona FC",12,6,3,3,22,11,21,null,null,null,null,null,2,13.5,4.7,49.8],
+   ["Burgos CF",12,6,3,3,17,13,21,null,null,null,null,null,null,10.6,3.6,47.3],
+   ["Real Oviedo",12,5,3,4,17,15,18,null,null,null,null,34,null,14.8,4.9,50.3],
+   ["CE Sabadell",12,4,5,3,12,11,17,null,null,null,null,null,null,14.8,3.9,47.8],
+   ["UD Las Palmas",12,5,2,5,17,21,17,null,null,null,null,null,2,9.6,3.6,51.4],
+   ["Córdoba CF",12,5,1,6,19,22,16,null,null,null,null,36,null,15.0,4.9,56.4],
+   ["Real Valladolid",12,4,3,5,20,19,15,null,null,null,null,null,3],
+   ["CD Tenerife",12,3,6,3,15,17,15],
+   ["CD Eldense",12,4,2,6,13,17,14],
+   ["Celta Fortuna",12,3,4,5,18,23,13],
+   ["CD Leganés",12,3,3,6,10,20,12,null,null,null,null,34],
+   ["FC Andorra",12,3,2,7,17,22,11,null,null,null,null,38],
+   ["Real Sociedad B",12,3,2,7,15,22,11],
+   ["Cádiz CF",12,2,4,6,15,16,10],
+   ["Albacete BP",12,2,1,9,10,23,7],
+   ["AD Ceuta FC",12,1,2,9,10,27,5]],
+  // [jugador, equipo, goles, null, null, asistencias, amarillas, rojas]
+  p:[["Álvaro Marín","Celta Fortuna",7,null,null,null,null,null],["Miguel de la Fuente","UD Almería",7,null,null,null,null,null],["Enric Gallego","CD Tenerife",7,null,null,null,null,null],
+     ["Adrián Fuentes","RCD Mallorca",6,null,null,null,null,null],["Israel Suero","CD Castellón",6,null,null,null,null,null],["Jordi Cano","FC Andorra",5,null,null,null,null,null],
+     ["Vladyslav Vanat","Girona FC",5,null,null,null,null,null],["Yáser Asprilla","Girona FC",5,null,null,null,null,null],
+     ["Julien Ponceau","Real Valladolid",null,null,null,5,null,null],["Javi Llabrés","Burgos CF",null,null,null,5,null,null],["Cristian Carracedo","Córdoba CF",null,null,null,5,null,null],
+     ["Diego Alende","FC Andorra",null,null,null,null,6,null],["Pablo Meixús","Celta Fortuna",null,null,null,null,1,2]],
+  pcards:"",
+  src:[["Clasificación oficial · laliga.com","https://www.laliga.com/laliga-hypermotion/clasificacion"],["Tiros, posesión y tarjetas por equipo · Alargue","https://alargue.com/ligas/laliga-hypermotion/estadisticas"],["Goleadores y asistentes · VAVEL","https://www.vavel.com/en-us/data/segunda-division/stats"]]}
+};
+
+
+// ---------- COMPETICIONES EUROPEAS Y COPA ----------
+// UEFA: [equipo, PJ, G, E, P, GF, GC, Pts]. Fuente: FutbolTotal (clasificación) y VAVEL (goleadores).
+const ESP=new Set(["Real Madrid","FC Barcelona","Real Betis","Atlético de Madrid","Villarreal CF","Real Sociedad","Celta"]);
+const UZ=[[1,8,"z-top","Octavos directos"],[9,24,"z-mid","Playoff"],[25,36,"z-bot","Eliminado"]];
+L.ucl={type:"uefa",name:"Champions League",jor:"Jornada 4 de 8 · datos al 6 de noviembre de 2026",zones:UZ,
+ t:[["Paris Saint-Germain",4,4,0,0,20,5,12],["Real Madrid",4,4,0,0,13,7,12],["Arsenal",4,3,1,0,8,3,10],["Como",4,3,0,1,19,6,9],["FC Barcelona",4,3,0,1,14,6,9],["Aston Villa",4,3,0,1,12,6,9],["Manchester City",4,3,0,1,12,7,9],["Liverpool",4,3,0,1,14,10,9],["Club Brugge",4,3,0,1,11,7,9],["Sporting CP",4,3,0,1,8,4,9],["Real Betis",4,3,0,1,8,6,9],["Borussia Dortmund",4,3,0,1,7,5,9],["Bayern Múnich",4,2,2,0,12,5,8],["VfB Stuttgart",4,2,1,1,7,4,7],["Inter",4,2,0,2,8,6,6],["LASK Linz",4,2,0,2,10,9,6],["Manchester United",4,2,0,2,8,8,6],["Galatasaray",4,2,0,2,8,9,6],["Fenerbahçe",4,1,2,1,6,11,5],["Roma",4,1,1,2,10,8,4],["Shakhtar Donetsk",4,1,1,2,4,4,4],["Viking",4,1,1,2,9,10,4],["Atlético de Madrid",4,1,1,2,4,5,4],["PSV Eindhoven",4,1,1,2,3,4,4],["Bodø/Glimt",4,1,1,2,4,9,4],["FC Porto",4,1,0,3,6,7,3],["Napoli",4,1,0,3,6,11,3],["Villarreal CF",4,1,0,3,8,14,3],["AEK Atenas",4,1,0,3,5,11,3],["RB Leipzig",4,1,0,3,5,11,3],["Sabah",4,1,0,3,4,10,3],["Feyenoord",4,1,0,3,4,11,3],["Lens",4,1,0,3,4,16,3],["Slavia Praga",4,0,1,3,5,9,1],["Lille",4,0,1,3,4,10,1],["Slovan Bratislava",4,0,0,4,1,17,0]],
+ sc:[["Veljko Simić","Sabah",6],["Joy-Lance Mickels","Sabah",5],["Harry Kane","Bayern Múnich",4],["Erling Haaland","Manchester City",4],["Serhou Guirassy","Borussia Dortmund",4],["Luis Suárez","Sporting CP",4],["Ermedin Demirović","VfB Stuttgart",4],["Nicolò Tresoldi","Club Brugge",4],["Talisca","Fenerbahçe",4],["Mario Kvesić","Celje",4],["Ousmane Dembélé","Paris Saint-Germain",3],["Mason Greenwood","Fenerbahçe",3]],
+ as:[["Tymoteusz Puchacz","Sabah",6],["Lamine Yamal","FC Barcelona",4],["Arda Güler","Real Madrid",3],["Ousmane Dembélé","Paris Saint-Germain",3],["Nico Paz","Como",3]],
+ src:[["Clasificación · FutbolTotal","https://futboltotal.futbol/league/uefa-champions-league/clasificacion"],["Goleadores y asistentes · VAVEL","https://www.vavel.com/en/data/champions-league/stats/"]]};
+L.uel={type:"uefa",name:"Europa League",jor:"Jornada 4 de 8 · datos al 6 de noviembre de 2026",zones:UZ,
+ t:[["Benfica",4,4,0,0,13,3,12],["Bournemouth",4,4,0,0,11,2,12],["Ferencváros",4,4,0,0,11,3,12],["Union Saint-Gilloise",4,3,1,0,10,2,10],["Juventus",4,3,1,0,11,4,10],["Olympiacos",4,3,1,0,4,1,10],["Bayer Leverkusen",4,3,0,1,8,1,9],["Beşiktaş",4,2,1,1,11,8,7],["Dinamo Zagreb",4,2,1,1,5,4,7],["Levski Sofia",4,2,1,1,4,3,7],["Sunderland",4,2,1,1,4,4,7],["NEC Nijmegen",4,2,1,1,8,9,7],["Lyon",4,2,1,1,6,7,7],["AZ Alkmaar",4,2,0,2,7,4,6],["Anderlecht",4,2,0,2,6,3,6],["OFI Creta",4,2,0,2,5,4,6],["Rennes",4,1,3,0,4,3,6],["Omonia Nicosia",4,2,0,2,6,7,6],["Torreense",4,2,0,2,7,9,6],["Real Sociedad",4,1,2,1,9,4,5],["Crystal Palace",4,1,2,1,9,6,5],["Sparta Praga",4,1,1,2,6,6,4],["Hoffenheim",4,1,1,2,6,6,4],["Sturm Graz",4,1,1,2,3,6,4],["Celje",4,1,1,2,5,9,4],["RB Salzburgo",4,1,1,2,3,8,4],["Celta",4,1,0,3,4,6,3],["AC Milan",4,1,0,3,4,7,3],["Jagiellonia",4,1,0,3,4,7,3],["Viktoria Plzeň",4,1,0,3,3,7,3],["Olympique de Marsella",4,1,0,3,2,6,3],["Celtic",4,1,0,3,6,11,3],["Hapoel Beer Sheva",4,0,1,3,1,8,1],["Lillestrøm",4,0,1,3,2,10,1],["Lech Poznań",4,0,1,3,2,12,1],["Ararat-Armenia",4,0,0,4,4,14,0]],
+ sc:null,as:null,
+ src:[["Clasificación · FutbolTotal","https://futboltotal.futbol/league/uefa-europa-league/clasificacion"]]};
+// Copa: [equipo, división, rival, marcador (equipo primero), estado ok/ko/wait/bye, nota]
+L.copa={type:"cup",name:"Copa del Rey",jor:"Primera ronda (27-29 oct) · datos al 6 de noviembre de 2026",
+ cal:[["Primera ronda","28 oct 2026"],["Segunda ronda","2 dic 2026"],["Dieciseisavos","16 dic 2026"],["Octavos","6 ene 2027"],["Cuartos","13 ene 2027"],["Semifinales","10 feb y 3 mar 2027"],["Final · La Cartuja","24 abr 2027"]],
+ r:[
+  ["FC Barcelona","1ª","—","","bye","Entra en dieciseisavos (Supercopa)"],["Real Madrid","1ª","—","","bye","Entra en dieciseisavos (Supercopa)"],["Atlético de Madrid","1ª","—","","bye","Entra en dieciseisavos (Supercopa)"],["Real Sociedad","1ª","—","","bye","Entra en dieciseisavos (Supercopa)"],
+  ["Sevilla FC","1ª","Sporting Hortaleza","3-0","ok",""],["Athletic Club","1ª","AE Prat","6-1","ok",""],["RC Deportivo","1ª","Auriense","3-0","ok",""],["Villarreal CF","1ª","CD Manacor","5-0","ok",""],
+  ["Rayo Vallecano","1ª","Recreativo de Huelva","3-2","ok","En la prórroga"],["Getafe CF","1ª","UB Lebrijana","3-2","ok",""],["CA Osasuna","1ª","Atlético Calatayud","6-0","ok",""],["Racing de Santander","1ª","Ribadesella","2-0","ok",""],
+  ["Elche CF","1ª","UD Pinatar","3-1","ok",""],["Málaga CF","1ª","Sporting de Alcázar","3-0","ok",""],["RCD Espanyol","1ª","Sestao River","3-4","ko","Eliminado en la prórroga"],
+  ["Real Betis","1ª","CD Navalcarnero","","wait","Aplazado"],["Celta","1ª","Salamanca CF","","wait","Aplazado"],["Deportivo Alavés","1ª","CD Anaitasuna","","wait","Aplazado"],["Levante UD","1ª","CD Tarancón","","wait","Aplazado"],["Valencia CF","1ª","UE Tavernes","","wait","Aplazado"],
+  ["CD Castellón","2ª","Conquense","3-0","ok",""],["UD Almería","2ª","Castellonense","2-1","ok","En la prórroga"],["Granada CF","2ª","CD Cieza","3-0","ok",""],["Real Sporting","2ª","Guijuelo","3-1","ok",""],["Girona FC","2ª","CD Cuarte","2-0","ok",""],["Burgos CF","2ª","Laredo","4-2","ok",""],
+  ["UD Las Palmas","2ª","RSD Alcalá","3-1","ok","En la prórroga"],["Real Valladolid","2ª","Covadonga","1-0","ok",""],["CD Eldense","2ª","Atlético Baleares","1-0","ok",""],["FC Andorra","2ª","Varea","3-0","ok",""],["Cádiz CF","2ª","Xerez CD","3-1","ok",""],["AD Ceuta FC","2ª","UD Poblense","2-1","ok",""],
+  ["Real Oviedo","2ª","CD Numancia","3-3","ko","Eliminado en los penaltis (2-4)"],["Córdoba CF","2ª","Atlético Paso","1-3","ko","Eliminado"],
+  ["SD Eibar","2ª","CD Pamplona","","wait","Aplazado"],["RCD Mallorca","2ª","CD Alcoyano","","wait","Aplazado"],["CE Sabadell","2ª","Utebo FC","","wait","Aplazado"],["CD Tenerife","2ª","CD Badajoz","","wait","Aplazado"],["CD Leganés","2ª","Trival Valderas","","wait","Aplazado"],["Albacete BP","2ª","CS Puertollano","","wait","Aplazado"]],
+ src:[["Resultados · FutbolTotal","https://futboltotal.futbol/league/copa-del-rey"],["Calendario · FutbolTotal","https://futboltotal.futbol/league/copa-del-rey/noticias/guia-copa-del-rey-2026-27"]]};
+// ---------- MODELO ----------
+const NOTE={league:'<strong>Cómo leer el analizador:</strong> los porcentajes salen de un modelo de Poisson con los goles a favor y en contra de cada equipo esta temporada. No tiene en cuenta lesiones, rotaciones ni el factor campo, así que tómalo como una orientación, no como una apuesta segura.',
+ uefa:'<strong>Cómo leer el analizador:</strong> usa los goles a favor y en contra de cada equipo en esta competición. Con solo 4 partidos jugados, los porcentajes son muy orientativos. Córners y tarjetas no se publican por equipo en Europa, por eso no salen.',
+ cup:'<strong>Cómo leer el analizador:</strong> en la Copa se usan los datos de liga de cada equipo (los rivales de categorías inferiores no tienen estadísticas). Si cruzas un equipo de Primera con uno de Hypermotion, el modelo no tiene en cuenta la diferencia de categoría y da más opciones de las reales al de Hypermotion.'};
+let cur="liga", sortKey="pts", sortDir=-1;
+const $=id=>document.getElementById(id);
+const f1=n=>n==null?"—":(Math.round(n*10)/10).toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
+function teams(k=cur){return L[k].t.map((r,i)=>({n:r[0],pj:r[1],g:r[2],e:r[3],p:r[4],gf:r[5],gc:r[6],pts:r[7],
+  cf:r[8]??null,ca:r[9]??null,yf:r[10]??null,ya:r[11]??null,yt:r[12]??null,rt:r[13]??null,sh:r[14]??null,sot:r[15]??null,pos:r[16]??null,rank:i+1}))}
+function pois(l,k){let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p}
+
+function leaders(){
+  const T=teams(), out=[];
+  const best=(fn,dir=-1)=>{const v=T.filter(t=>fn(t)!=null);if(!v.length)return null;return v.sort((a,b)=>dir*(fn(a)-fn(b)))[v.length&&0]};
+  const add=(k,t,val,s)=>out.push(t?`<div class="lead"><span class="k">${k}</span><span class="v">${val}</span><span class="t">${t.n}</span><span class="s">${s}</span></div>`
+     :`<div class="lead na"><span class="k">${k}</span><span class="v">Sin datos</span><span class="s">${s}</span></div>`);
+  let t=best(x=>x.gf); add("Más goles",t,t.gf,`${f1(t.gf/t.pj)} por partido`);
+  t=best(x=>x.gc,1); add("Menos goles en contra",t,t.gc,`${f1(t.gc/t.pj)} por partido`);
+  t=best(x=>x.g); add("Más victorias",t,t.g,`de ${t.pj} partidos`);
+  t=best(x=>x.cf); add("Más córners a favor",t,t?f1(t.cf):"",t?`por partido · ${Math.round(t.cf*t.pj)} en total`:"No publicado para esta liga");
+  t=best(x=>x.yt); add("Más amarillas",t,t?t.yt:"",t?(t.rt!=null?`y ${t.rt} rojas`:"amarillas en la liga"):"");
+  if(cur==="liga"){t=best(x=>x.rt);add("Más rojas",t,t.rt,`${t.yt} amarillas`)}
+  else{t=best(x=>x.sot);add("Más tiros a puerta",t,f1(t.sot),`por partido · ${f1(t.sh)} tiros`)}
+  $("leaders").innerHTML=out.join("");
+}
+
+function pool(){
+  const mk=k=>{const T=teams(k),avg=T.reduce((s,t)=>s+t.gf,0)/T.reduce((s,t)=>s+t.pj,0);return T.map(t=>({...t,lg:k,avg}))};
+  if(cur==="copa")return [...mk("liga"),...mk("hyper").filter(t=>!/ B$|Fortuna/.test(t.n))];
+  return mk(cur);
+}
+function fillSelects(){
+  const P=pool(), op=(t,i)=>`<option value="${i}">${t.n}</option>`;
+  const o=cur==="copa"?`<optgroup label="LaLiga EA Sports">${P.map((t,i)=>t.lg==="liga"?op(t,i):"").join("")}</optgroup><optgroup label="LaLiga Hypermotion">${P.map((t,i)=>t.lg==="hyper"?op(t,i):"").join("")}</optgroup>`:P.map(op).join("");
+  $("home").innerHTML=o;$("away").innerHTML=o;
+  let h=0,a=Math.min(2,P.length-1);
+  if(L[cur].type==="uefa"){h=P.findIndex(t=>ESP.has(t.n));a=h===0?1:0}
+  $("home").value=h;$("away").value=a;
+}
+function analyze(){
+  const T=pool(), A=T[+$("home").value], B=T[+$("away").value];
+  const avg=(A.avg+B.avg)/2;
+  // Se suavizan las medias hacia la media de la competición (3 partidos "fantasma") para que pocos partidos no den resultados extremos
+  const K=3, r=(x,t)=>(x+K*t.avg)/(t.pj+K)/t.avg;
+  const lA=Math.max(0.15,r(A.gf,A)*r(B.gc,B)*avg), lB=Math.max(0.15,r(B.gf,B)*r(A.gc,A)*avg);
+  let pH=0,pD=0,pA=0,o25=0,btts=0,bestS=[0,0,0];
+  for(let i=0;i<=9;i++)for(let j=0;j<=9;j++){const p=pois(lA,i)*pois(lB,j);
+    if(i>j)pH+=p;else if(i===j)pD+=p;else pA+=p; if(i+j>2)o25+=p; if(i>0&&j>0)btts+=p; if(p>bestS[2])bestS=[i,j,p]}
+  const tot=pH+pD+pA; pH/=tot;pD/=tot;pA/=tot;
+  const mx=Math.max(pH,pD,pA), pct=x=>Math.round(x*100)+"%";
+  const same=A===B;
+  $("odds").innerHTML=same?`<div class="odd" style="grid-column:1/-1"><span class="lab">Elige dos equipos distintos</span></div>`:
+   [["1 · "+A.n,pH],["X · Empate",pD],["2 · "+B.n,pA]].map(([l,p])=>`<div class="odd${p===mx?" best":""}"><span class="lab" title="${l}">${l}</span><span class="pct">${pct(p)}</span><span class="bar"><i style="width:${p*100}%"></i></span></div>`).join("");
+  const F=[];
+  const lgView=(L[cur].type||"league")==="league";
+  const fact=(lab,val,sub)=>(val==null&&!lgView)?0:F.push(val==null?`<div class="fact na"><span class="lab">${lab}</span><span class="val">Sin datos en esta liga</span></div>`:`<div class="fact"><span class="lab">${lab}</span><span class="val">${val}</span><span class="sub">${sub||""}</span></div>`);
+  if(!same){
+    fact("Goles esperados",`${f1(lA)} – ${f1(lB)}`,`Total ${f1(lA+lB)}`);
+    fact("Resultado más probable",`${bestS[0]} – ${bestS[1]}`,`${pct(bestS[2])} de probabilidad`);
+    fact("Más de 2,5 goles",pct(o25),`Menos de 2,5: ${pct(1-o25)}`);
+    fact("Marcan los dos",pct(btts),`No marcan los dos: ${pct(1-btts)}`);
+    const hasC=A.cf!=null&&B.cf!=null;
+    fact("Córners esperados",hasC?f1((A.cf+B.ca)/2+(B.cf+A.ca)/2):null,hasC?`${A.n.split(" ")[0]} ${f1((A.cf+B.ca)/2)} · ${B.n.split(" ")[0]} ${f1((B.cf+A.ca)/2)}`:"");
+    const hasY=A.yf!=null&&B.yf!=null;
+    fact("Amarillas esperadas",hasY?f1((A.yf+B.ya)/2+(B.yf+A.ya)/2):null,hasY?`${A.n.split(" ")[0]} ${f1((A.yf+B.ya)/2)} · ${B.n.split(" ")[0]} ${f1((B.yf+A.ya)/2)}`:"");
+    if(A.lg==="hyper"&&B.lg==="hyper"){const hs=A.sot!=null&&B.sot!=null;fact("Tiros a puerta por partido",hs?`${f1(A.sot)} – ${f1(B.sot)}`:null,hs?"media de cada equipo esta temporada":"")}
+    else if(A.lg==="liga"||B.lg==="liga"){const P=L.liga.p, sh=t=>P.filter(p=>p[1]===t.n).sort((a,b)=>b[4]-a[4])[0];
+      const a=sh(A),b=sh(B);
+      fact("Quién más tira a puerta",(a||b)?[a,b].filter(Boolean).map(p=>p[0].split(" ").slice(-1)[0]+" "+p[4]).join(" · "):null,"tiros a puerta en la liga (máx. de cada equipo)")}
+  }
+  if(!same&&A.lg!==B.lg)F.unshift(`<div class="fact" style="grid-column:1/-1;border-color:var(--warn)"><span class="lab">Ojo: equipos de distinta categoría</span><span class="sub">Cada uno se mide con su propia liga, así que el de Hypermotion sale con más opciones de las que tendría en realidad.</span></div>`);
+  $("facts").innerHTML=F.join("");
+  const rows=[["Puntos",A.pts,B.pts],["Goles a favor",A.gf,B.gf],["Goles en contra",A.gc,B.gc],["Victorias",A.g,B.g]];
+  if(A.cf!=null&&B.cf!=null)rows.push(["Córners/partido",A.cf,B.cf]);
+  if(A.yt!=null&&B.yt!=null)rows.push(["Amarillas",A.yt,B.yt]);
+  if(A.sot!=null&&B.sot!=null)rows.push(["Tiros a puerta/p",A.sot,B.sot]);
+  $("cmp").innerHTML=same?"":rows.map(([l,a,b])=>{const m=Math.max(a,b)||1,fmt=v=>Number.isInteger(v)?v:f1(v);
+    return `<div class="cmp-row"><span class="n">${fmt(a)}</span><span class="l"><i style="width:${a/m*100}%"></i></span><span class="lab">${l}</span><span class="r"><i style="width:${b/m*100}%"></i></span><span class="n">${fmt(b)}</span></div>`}).join("");
+}
+
+const COLS=[["rank","#"],["n","Equipo"],["pts","Pts"],["pj","PJ"],["g","G"],["e","E"],["p","P"],["gf","GF"],["gc","GC"],["dg","DG"],["gfp","Goles/p"],["cf","Córn. fav/p"],["ca","Córn. con/p"],["yt","Amarillas"],["rt","Rojas"],["sh","Tiros/p"],["sot","A puerta/p"],["pos","Posesión"]];
+function table(){
+  const T=teams().map(t=>({...t,dg:t.gf-t.gc,gfp:t.gf/t.pj})), z=L[cur].zones;
+  const cols=COLS.filter(([k])=>T.some(t=>t[k]!=null));
+  T.sort((a,b)=>{const x=a[sortKey],y=b[sortKey];if(x==null)return 1;if(y==null)return -1;return typeof x==="string"?sortDir*x.localeCompare(y):sortDir*(x-y)||a.rank-b.rank});
+  const zc=r=>{for(const [a,b,c] of z)if(r>=a&&r<=b)return c;return""};
+  const cell=(k,t)=>{const v=t[k];if(v==null)return `<td class="dash">—</td>`;
+    if(k==="rank")return `<td class="pos">${v}</td>`;
+    if(k==="n")return `<td class="tm"><span class="zone ${zc(t.rank)}"></span>${v}</td>`;
+    if(k==="dg")return `<td>${v>0?"+":""}${v}</td>`;
+    if(k==="yt")return `<td><span class="cardy"></span>${v}</td>`;
+    if(k==="rt")return `<td><span class="cardr"></span>${v}</td>`;
+    if(k==="pos")return `<td>${f1(v)}%</td>`;
+    if(["gfp","cf","ca","sh","sot"].includes(k))return `<td>${f1(v)}</td>`;
+    if(k==="pts")return `<td><b>${v}</b></td>`;
+    return `<td>${v}</td>`};
+  $("table").innerHTML=`<thead><tr>${cols.map(([k,l])=>`<th class="${k==="n"?"tm":""}" data-k="${k}" ${k===sortKey?'aria-sort="'+(sortDir<0?"descending":"ascending")+'"':""} scope="col">${l}</th>`).join("")}</tr></thead>
+   <tbody>${T.map(t=>`<tr${L[cur].type==="uefa"&&ESP.has(t.n)?' class="esp"':""}>${cols.map(([k])=>cell(k,t)).join("")}</tr>`).join("")}</tbody>`;
+  $("table").querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(k===sortKey)sortDir*=-1;else{sortKey=k;sortDir=(k==="n"||k==="rank"||k==="gc")?1:-1}table()});
+  $("zlegend").innerHTML=z.map(([,, c,l])=>`<span><i class="zone ${c}"></i>${l}</span>`).join("")+
+    (cur==="hyper"?`<span>— = dato no publicado para ese equipo</span>`:"");
+}
+function players(){
+  const P=L[cur].p;
+  if(cur==="liga"){
+    $("plTitle").textContent="Goleadores y tiros a puerta";
+    $("plMeta").textContent="% a puerta = tiros a puerta / tiros totales. "+L.liga.pcards;
+    $("players").innerHTML=`<thead><tr><th class="tm">Jugador</th><th class="tm">Equipo</th><th>Goles</th><th>Tiros</th><th>A puerta</th><th>% a puerta</th><th>Gol por tiro a puerta</th><th>Asist.</th><th>Amarillas</th></tr></thead><tbody>`+
+      P.map(p=>`<tr><td class="tm">${p[0]}</td><td class="tm" style="font-weight:400">${p[1]}</td><td><b>${p[2]}</b></td><td>${p[3]}</td><td>${p[4]}</td><td>${Math.round(p[4]/p[3]*100)}%</td><td>${Math.round(p[2]/p[4]*100)}%</td><td>${p[5]}</td><td><span class="cardy"></span>${p[6]}</td></tr>`).join("")+"</tbody>";
+  }else{
+    $("plTitle").textContent="Jugadores destacados";
+    $("plMeta").textContent="Los tiros a puerta por jugador no se publican para la Hypermotion.";
+    const v=x=>x==null?'<td class="dash">—</td>':`<td>${x}</td>`;
+    $("players").innerHTML=`<thead><tr><th class="tm">Jugador</th><th class="tm">Equipo</th><th>Goles</th><th>Asist.</th><th>Amarillas</th><th>Rojas</th></tr></thead><tbody>`+
+      P.map(p=>`<tr><td class="tm">${p[0]}</td><td class="tm" style="font-weight:400">${p[1]}</td>${v(p[2])}${v(p[5])}${v(p[6])}${v(p[7])}</tr>`).join("")+"</tbody>";
+  }
+}
+function uefa(){
+  const c=L[cur], T=teams(), z=c.zones, zl=r=>{for(const [a,b,,l] of z)if(r>=a&&r<=b)return l};
+  $("ldTitle").textContent="Equipos españoles";
+  $("leaders").innerHTML=T.filter(t=>ESP.has(t.n)).map(t=>`<div class="lead"><span class="k">${zl(t.rank)}</span><span class="v">${t.rank}º</span><span class="t">${t.n}</span><span class="s">${t.pts} pts · ${t.g}G ${t.e}E ${t.p}P · goles ${t.gf}-${t.gc}</span></div>`).join("");
+  $("tbTitle").textContent="Clasificación de la fase liga";$("tbMeta").textContent="En color, los equipos españoles";
+  table();
+  $("secPl").hidden=false;$("plTitle").textContent="Goleadores y asistentes";
+  if(!c.sc){$("plMeta").textContent="";$("players").innerHTML=`<tbody><tr><td class="tm dash">Sin datos de goleadores publicados para esta competición todavía.</td></tr></tbody>`;return}
+  $("plMeta").textContent="";
+  const rows=Math.max(c.sc.length,c.as.length);let h=`<thead><tr><th class="tm">Goleador</th><th class="tm">Equipo</th><th>Goles</th><th class="tm">Asistente</th><th class="tm">Equipo</th><th>Asist.</th></tr></thead><tbody>`;
+  for(let i=0;i<rows;i++){const a=c.sc[i],b=c.as[i];h+=`<tr>${a?`<td class="tm">${a[0]}</td><td class="tm" style="font-weight:400">${a[1]}</td><td><b>${a[2]}</b></td>`:"<td></td><td></td><td></td>"}${b?`<td class="tm">${b[0]}</td><td class="tm" style="font-weight:400">${b[1]}</td><td><b>${b[2]}</b></td>`:"<td></td><td></td><td></td>"}</tr>`}
+  $("players").innerHTML=h+"</tbody>";
+}
+function cup(){
+  const c=L.copa,R=c.r;
+  $("ldTitle").textContent="Calendario";
+  $("leaders").innerHTML=c.cal.map(([r,d],i)=>`<div class="lead"><span class="k">${r}</span><span class="v" style="font-size:1.5rem">${d}</span><span class="s">${i===0?"Jugada (quedan partidos aplazados)":i===2?"Entran Barça, Madrid, Atlético y Real Sociedad":""}</span></div>`).join("");
+  $("tbTitle").textContent="Equipos de LaLiga e Hypermotion";
+  const n=s=>R.filter(r=>r[4]===s).length;
+  $("tbMeta").textContent=`${n("ok")} clasificados · ${n("ko")} eliminados · ${n("wait")} aplazados · ${n("bye")} entran más tarde`;
+  const P={ok:'<span class="pill p-ok">Pasa</span>',ko:'<span class="pill p-ko">Fuera</span>',wait:'<span class="pill p-wait">Pendiente</span>',bye:'<span class="pill p-wait">Exento</span>'};
+  const card=r=>`<div class="match"><span class="who">${r[0]}</span><span class="sc">${r[3]||""}</span><span class="st">${P[r[4]]}${r[2]!=="—"?"vs "+r[2]:""}${r[5]?" · "+r[5]:""}</span></div>`;
+  const tb=$("table").parentElement; tb.style.border="0";tb.style.background="transparent";
+  $("table").outerHTML=`<div class="res" id="table"><h3>LaLiga EA Sports</h3>${R.filter(r=>r[1]==="1ª").map(card).join("")}<h3>LaLiga Hypermotion</h3>${R.filter(r=>r[1]==="2ª").map(card).join("")}<p class="meta" style="grid-column:1/-1;margin:0">Celta Fortuna y Real Sociedad B no juegan la Copa por ser filiales. Los aplazados aún no tienen fecha nueva.</p></div>`;
+  $("zlegend").innerHTML="";$("secPl").hidden=true;
+}
+function render(){
+  document.body.dataset.l=cur;
+  $("switch").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===cur));
+  $("jor").textContent=L[cur].jor;
+  sortKey="pts";sortDir=-1;
+  if(!$("table")||$("table").tagName!=="TABLE"){const d=$("table");if(d)d.outerHTML='<table id="table"></table>';const tb=$("table").parentElement;tb.style.border="";tb.style.background=""}
+  const type=L[cur].type||"league";
+  $("anNote").innerHTML=type==="league"?NOTE.league:type==="uefa"?NOTE.uefa:NOTE.cup;
+  if(type==="league"){$("ldTitle").textContent="Líderes";$("tbTitle").textContent="Clasificación y estadísticas";$("tbMeta").textContent="Toca una columna para ordenar";$("secPl").hidden=false;
+    leaders();fillSelects();analyze();table();players();}
+  else{type==="uefa"?uefa():cup();fillSelects();analyze()}
+  $("foot").innerHTML="Fuentes: "+L[cur].src.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")+
+    `<span>Los datos son una foto fija de esta fecha; no se actualizan solos.</span>`;
+}
+$("switch").querySelectorAll("button").forEach(b=>b.onclick=()=>{cur=b.dataset.l;try{localStorage.setItem("liga",cur)}catch(e){};render()});
+$("home").onchange=analyze;$("away").onchange=analyze;
+try{const s=localStorage.getItem("liga");if(s&&L[s])cur=s}catch(e){}
+render();
+</script>
+</body>
+</html>
