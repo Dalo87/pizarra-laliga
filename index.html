@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#17432c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pizarra">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>[hidden]{display:none!important}body{margin:0}</style>
 <title>Pizarra de LaLiga</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,6 +54,19 @@ header p{margin:6px 0 0;color:var(--muted);max-width:60ch}
 .switch{display:flex;flex-wrap:wrap;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper)}
 .switch button{flex:1 1 auto}
 tr.esp td{background:var(--acc-soft)}
+/* Móvil: menú de competiciones fijo arriba y deslizable */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+@media (max-width:640px){
+  header{flex-direction:column;align-items:stretch}
+  header h1{font-size:2.3rem}
+  .switch{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .switch::-webkit-scrollbar{display:none}
+  .switch button{flex:0 0 auto;white-space:nowrap;padding:12px 16px}
+  .sec-h h2{font-size:1.45rem}
+  .card{padding:14px}
+  th,td{padding:7px 8px;font-size:13px}
+  .pick select{font-size:16px}
+}
 [hidden]{display:none!important}
 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
 .match{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;min-width:0}
@@ -135,6 +157,7 @@ footer a{color:inherit}
       <h1>Pizarra de LaLiga</h1>
       <p id="sub">Goles, victorias, tarjetas, córners y tiros a puerta de la temporada 2026/27: LaLiga, Hypermotion, Champions, Europa League y Copa del Rey.</p>
     </div>
+  </header>
     <div class="switch" id="switch">
       <button data-l="liga" aria-pressed="true">LaLiga EA Sports</button>
       <button data-l="hyper" aria-pressed="false">Hypermotion</button>
@@ -142,7 +165,6 @@ footer a{color:inherit}
       <button data-l="uel" aria-pressed="false">Europa League</button>
       <button data-l="copa" aria-pressed="false">Copa del Rey</button>
     </div>
-  </header>
 
   <section style="display:flex;flex-direction:column;gap:10px">
     <div class="sec-h"><h2 id="ldTitle">Líderes</h2><span class="meta" id="jor"></span></div>
@@ -331,7 +353,7 @@ function analyze(){
    [["1 · "+A.n,pH],["X · Empate",pD],["2 · "+B.n,pA]].map(([l,p])=>`<div class="odd${p===mx?" best":""}"><span class="lab" title="${l}">${l}</span><span class="pct">${pct(p)}</span><span class="bar"><i style="width:${p*100}%"></i></span></div>`).join("");
   const F=[];
   const lgView=(L[cur].type||"league")==="league";
-  const fact=(lab,val,sub)=>(val==null&&!lgView)?0:F.push(val==null?`<div class="fact na"><span class="lab">${lab}</span><span class="val">Sin datos en esta liga</span></div>`:`<div class="fact"><span class="lab">${lab}</span><span class="val">${val}</span><span class="sub">${sub||""}</span></div>`);
+  const fact=(lab,val,sub)=>(val==null&&!lgView)?0:F.push(val==null?`<div class="fact na"><span class="lab">${lab}</span><span class="val">Sin datos en esta liga</span></div>`:`<div class="fact"><span class="lab">${lab}</span><span class="val"${String(val).length>14?' style="font-size:1.1rem"':""}>${val}</span><span class="sub">${sub||""}</span></div>`);
   if(!same){
     fact("Goles esperados",`${f1(lA)} – ${f1(lB)}`,`Total ${f1(lA+lB)}`);
     fact("Resultado más probable",`${bestS[0]} – ${bestS[1]}`,`${pct(bestS[2])} de probabilidad`);
@@ -433,7 +455,7 @@ function render(){
   $("foot").innerHTML="Fuentes: "+L[cur].src.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")+
     `<span>Los datos son una foto fija de esta fecha; no se actualizan solos.</span>`;
 }
-$("switch").querySelectorAll("button").forEach(b=>b.onclick=()=>{cur=b.dataset.l;try{localStorage.setItem("liga",cur)}catch(e){};render()});
+$("switch").querySelectorAll("button").forEach(b=>b.onclick=()=>{cur=b.dataset.l;try{localStorage.setItem("liga",cur)}catch(e){};render();b.scrollIntoView({inline:"center",block:"nearest"})});
 $("home").onchange=analyze;$("away").onchange=analyze;
 try{const s=localStorage.getItem("liga");if(s&&L[s])cur=s}catch(e){}
 render();
